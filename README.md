@@ -18,8 +18,8 @@ Robust Logging: Implements the standard Python logging module to track the pipel
 
 ## Project Structure
 ```bash
-simple-etl-portfolio/
-├── etl_pipeline/
+etl-pipeline/
+├── pipeline/
 │   ├── __init__.py
 │   ├── extract.py      # Handles data extraction from source
 │   ├── transform.py    # Performs all data transformations
