@@ -18,45 +18,44 @@ def transform_data(extracted_data):
     try:
         logger.info("Starting data transformation.")
 
-        # --- Merge dimension tables with the fact table ---
-        sales_df = extracted_data['FactInternetSales']
-        product_df = extracted_data['DimProduct']
-        prod_sub_df = extracted_data['DimProductSubcategory']
-        prod_cat_df = extracted_data['DimProductCategory']
-        territory_df = extracted_data['DimSalesTerritory']
+        # --- Rename extracted tables according to actual Postgres names ---
+        sales_df = extracted_data['factinternetsales']
+        product_df = extracted_data['product']
+        prod_sub_df = extracted_data['productsubcategory']
+        prod_cat_df = extracted_data['productcategory']
+        territory_df = extracted_data['salesterritory']
 
-        # Join FactInternetSales with DimProduct
-        analytics_df = pd.merge(sales_df, product_df, on='ProductKey', how='left')
+        # Join FactInternetSales with Product
+        analytics_df = pd.merge(sales_df, product_df, on='productkey', how='left')
 
-        # Join with DimProductSubcategory
-        analytics_df = pd.merge(analytics_df, prod_sub_df, on='ProductSubcategoryKey', how='left')
+        # Join with ProductSubcategory
+        analytics_df = pd.merge(analytics_df, prod_sub_df, on='productsubcategorykey', how='left')
 
-        # Join with DimProductCategory
-        analytics_df = pd.merge(analytics_df, prod_cat_df, on='ProductCategoryKey', how='left')
+        # Join with ProductCategory
+        analytics_df = pd.merge(analytics_df, prod_cat_df, on='productcategorykey', how='left')
 
-        # Join with DimSalesTerritory
-        analytics_df = pd.merge(analytics_df, territory_df, on='SalesTerritoryKey', how='left')
+        # Join with SalesTerritory
+        analytics_df = pd.merge(analytics_df, territory_df, on='salesterritorykey', how='left')
 
         logger.info("Dataframes merged successfully.")
 
-        # --- Column Selection ---
-        # Select and rename columns for the final analytics table
+        # --- Column Selection and Renaming ---
         analytics_df = analytics_df[[
-            'OrderDate', 'SalesOrderNumber', 'OrderQuantity', 'UnitPrice', 'SalesAmount', 'TaxAmt',
-            'EnglishProductName', 'Color', 'EnglishProductCategoryName', 'EnglishProductSubcategoryName',
-            'SalesTerritoryCountry', 'SalesTerritoryRegion'
+            'orderdate', 'salesordernumber', 'orderquantity', 'unitprice', 'salesamount', 'taxamt',
+            'englishproductname', 'color', 'englishproductcategoryname', 'englishproductsubcategoryname',
+            'salesterritorycountry', 'salesterritoryregion'
         ]]
 
         analytics_df = analytics_df.rename(columns={
-            'EnglishProductName': 'ProductName',
-            'EnglishProductCategoryName': 'ProductCategory',
-            'EnglishProductSubcategoryName': 'ProductSubcategory',
-            'SalesTerritoryCountry': 'Country',
-            'SalesTerritoryRegion': 'Region'
+            'englishproductname': 'ProductName',
+            'englishproductcategoryname': 'ProductCategory',
+            'englishproductsubcategoryname': 'ProductSubcategory',
+            'salesterritorycountry': 'Country',
+            'salesterritoryregion': 'Region'
         })
 
-        # --- Create a new calculated column ---
-        analytics_df['TotalRevenue'] = analytics_df['SalesAmount'] + analytics_df['TaxAmt']
+        # --- Calculated Column ---
+        analytics_df['TotalRevenue'] = analytics_df['salesamount'] + analytics_df['taxamt']
 
         logger.info("Columns selected, renamed, and new 'TotalRevenue' column created.")
 

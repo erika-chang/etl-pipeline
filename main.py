@@ -1,14 +1,12 @@
-import configparser
+# main.py
 import logging
 import os
-from dotenv import load_dotenv
 
 from pipeline.extract import extract_data
 from pipeline.transform import transform_data
 from pipeline.load import load_data
 
 # --- Logging Configuration ---
-# Create logs directory if it doesn't exist
 if not os.path.exists('logs'):
     os.makedirs('logs')
 
@@ -27,19 +25,12 @@ def main():
     Main function to orchestrate the ETL pipeline.
     """
     logger.info("ETL pipeline started.")
-
-    # --- Configuration Loading ---
-    load_dotenv() # Load environment variables from .env file
-    config = configparser.ConfigParser()
-    config.read('config.ini')
-
-    # Get tables to process from config
-    tables_to_process = config.get('etl_tables', 'tables').split(',')
-
+    db_url = 'postgresql://etl_user:etl_paswd@localhost:5432/etl_db'
     try:
         # --- EXTRACT ---
         logger.info("Starting Extract phase...")
-        extracted_data = extract_data(config, tables_to_process)
+        tables_to_extract = ['salesterritory', 'productcategory', 'productsubcategory', 'product', 'factinternetsales']
+        extracted_data = extract_data(tables_to_extract, db_url)
         logger.info("Extract phase completed successfully.")
 
         # --- TRANSFORM ---
@@ -48,14 +39,11 @@ def main():
         logger.info("Transform phase completed successfully.")
 
         # --- LOAD ---
-        # We load both the original staged data and the final transformed data
-        logger.info("Starting Load phase for staging data...")
-        load_data(extracted_data, config, schema='staging', if_exists='replace')
-        logger.info("Staging data loaded successfully.")
-
-        logger.info("Starting Load phase for analytics data...")
-        load_data(transformed_data, config, schema='analytics', if_exists='replace')
-        logger.info("Analytics data loaded successfully.")
+        logger.info("Starting Load phase ...")
+        load_data(extracted_data, db_url, schema='staging', if_exists='replace')
+        logger.info("Data loaded successfully.")
+        load_data(transformed_data, db_url, schema='analytics', if_exists='replace')
+        logger.info("Transformed data loaded successfully.")
 
         logger.info("ETL pipeline finished successfully.")
 

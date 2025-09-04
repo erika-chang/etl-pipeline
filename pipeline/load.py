@@ -1,53 +1,33 @@
+from sqlalchemy import create_engine, text
 import logging
-import os
-from sqlalchemy import create_engine
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def load_data(data_to_load, config, schema, if_exists='replace'):
+def load_data(data_to_load, db_url, schema="public", if_exists="replace"):
     """
-    Loads data into the destination PostgreSQL database.
+    Carrega DataFrames em tabelas PostgreSQL e cria o schema automaticamente se não existir.
+    """
+    engine = create_engine(db_url)
 
-    Args:
-        data_to_load (dict): Dictionary of DataFrames to load.
-        config (ConfigParser): Configuration object with database details.
-        schema (str): The target schema in the database (e.g., 'staging', 'analytics').
-        if_exists (str): How to behave if the table already exists.
-                         Options: 'fail', 'replace', 'append'.
-    """
     try:
-        # Get credentials from environment variables
-        uid = os.environ.get('DB_USER')
-        pwd = os.environ.get('DB_PASSWORD')
-
-        # Get DB details from config
-        server = config.get('postgresql', 'server')
-        port = config.get('postgresql', 'port')
-        database = config.get('postgresql', 'database')
-
-        logger.info(f"Connecting to destination database: {server}/{database}")
-
-        engine = create_engine(f'postgresql://{uid}:{pwd}@{server}:{port}/{database}')
-
+        # Garante que o schema existe
         with engine.connect() as conn:
-            # Ensure the target schema exists
-            conn.execute(f"CREATE SCHEMA IF NOT EXISTS {schema};")
+            conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema};"))
             conn.commit()
-            logger.info(f"Schema '{schema}' ensured to exist.")
+        logging.info(f"Schema '{schema}' verificado/criado com sucesso.")
 
-            for table_name, df in data_to_load.items():
-                logger.info(f"Loading data into table: {schema}.{table_name}")
-
-                df.to_sql(
-                    name=table_name,
-                    con=engine,
-                    schema=schema,
-                    if_exists=if_exists,
-                    index=False,
-                    chunksize=10000  # Load data in chunks for better memory management
-                )
-
-                logger.info(f"Successfully loaded {len(df)} rows into {schema}.{table_name}.")
+        # Carrega os DataFrames no schema
+        for table_name, df in data_to_load.items():
+            df.to_sql(
+                table_name,
+                con=engine,
+                schema=schema,
+                index=False,
+                if_exists=if_exists
+            )
+            logging.info(f"Tabela '{table_name}' carregada com sucesso no schema '{schema}'.")
 
     except Exception as e:
-        logger.error(f"Error during data loading: {e}")
+        logging.error(f"Erro ao carregar dados: {e}")
+        raise

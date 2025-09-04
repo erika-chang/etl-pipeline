@@ -1,112 +1,119 @@
-# Simple Sales Data ETL Pipeline
+# 🚀 Simple Sales Data ETL Pipeline
 
-## Overview
-This project is a simple, portfolio-ready ETL (Extract, Transform, Load) pipeline. It extracts sales and product data from a source SQL Server database (using the AdventureWorks sample dataset), performs transformations to create an aggregated analytics table, and loads the final result into a destination PostgreSQL database.
+## 📖 Overview
 
-The primary goal of this project is to demonstrate best practices in building a data pipeline, including a modular structure, configuration management, logging, and clear documentation.
+This project is a simple ETL (Extract, Transform, Load) pipeline. It extracts sales and product data from a source SQL Server database, performs transformations to create an aggregated analytics table, and loads the result into a PostgreSQL database.
 
-## Features
-Modular Design: The ETL process is broken down into separate, reusable modules for extraction, transformation, and loading.
+The goal is to demonstrate best practices in building a data pipeline, including a modular structure, logging, and clear documentation. The project is fully reproducible thanks to Docker for the PostgreSQL database and Python scripts for source data creation.
 
-Configuration Driven: Database connections and table lists are managed in an external config.ini file, not hardcoded.
+## ✨ Features
 
-Credential Management: Sensitive credentials (username, password) are handled securely using a .env file and environment variables.
+🐳 Containerized Destination: Easily run PostgreSQL with Docker and Docker Compose.
 
-Meaningful Transformation: The pipeline joins fact and dimension tables to create a denormalized table ready for analytics.
+🔁 Fully Reproducible: Scripts create and populate the source database from scratch.
 
-Robust Logging: Implements the standard Python logging module to track the pipeline's execution and handle errors.
+🛠 Modular Design: ETL is split into extract, transform, and load modules.
 
-## Project Structure
+📊 Meaningful Transformation: Joins fact and dimension tables into a denormalized analytics table.
+
+📜 Robust Logging: Tracks pipeline execution with Python's logging module.
+
+
+## 📂 Project Structure
 ```bash
 etl-pipeline/
-├── pipeline/
-│   ├── __init__.py
-│   ├── extract.py      # Handles data extraction from source
-│   ├── transform.py    # Performs all data transformations
-│   └── load.py         # Loads transformed data to destination
-├── logs/
-│   └── etl_pipeline.log # Log file will be generated here
-├── .env.example        # Example environment file for credentials
-├── config.ini          # Configuration for databases and tables
-├── main.py             # Main script to run the ETL pipeline
-└── requirements.txt    # Python dependencies
+├── README.md
+├── database_setup
+│   ├── data_gen.py
+│   └── models.py
+├── docker-compose.yml
+├── logs
+├── main.py
+├── pipeline
+│   ├── __init__.py
+│   ├── extract.py
+│   ├── load.py
+│   └── transform.py
+├── requirements.txt
+└── sql
+    └── create_schema.sql
 ```
 
-## Prerequisites
-Python 3.8+
+## 🛠 Prerequisites
 
-Access to a SQL Server instance with the AdventureWorksDW2019 sample database.
+- Python 3.8+
 
-Access to a PostgreSQL instance.
+- Docker & Docker Compose
 
-[Optional but Recommended] Docker to easily spin up database instances.
 
-## Setup Instructions
-1. Clone the Repository:
+## ⚡ How to Run
+
+The pipeline has three main stages: Configuration → Database Setup → Run ETL.
+
+### 1️⃣ Initial Configuration
+
+Clone the repository:
 
 ```bash
 git clone <your-repo-url>
-cd simple-etl-portfolio
+cd etl-pipeline
 ```
 
-2. Create a Virtual Environment:
-It's highly recommended to use a virtual environment to manage dependencies.
+Create a virtual environment and install dependencies:
 
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-```
-
-3. Install Dependencies:
-
-```bash
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Configure Credentials:
-Create a .env file in the project root by copying the example file.
+
+### 2️⃣ Setting Up Databases
+
+Start PostgreSQL container:
 
 ```bash
-cp .env.example .env
+docker-compose up -d
 ```
 
-5. Now, edit the .env file and add your database credentials:
+Check if it’s running:
 
 ```bash
-DB_USER=your_database_username
-DB_PASSWORD=your_database_password
+docker ps
 ```
 
-6. Update Configuration:
-Open config.ini and update the [sql_server] and [postgresql] sections with your specific server details (e.g., hostname, database names) if they are not running on localhost.
+Populate source SQL Server database:
 
-7. Running the Pipeline
-To execute the full ETL process, simply run the main.py script from the project root directory:
+```bash
+cd database_setup
+python populate_database.py
+cd ..
+```
+
+### 3️⃣ Run the ETL Pipeline
 
 ```bash
 python main.py
 ```
 
-The script will log its progress to both the console and the logs/etl_pipeline.log file.
+Logs appear in the console and in logs/etl_pipeline.log.
 
-## ETL Logic Explained
-1. Extract
-The extract.py module connects to the source SQL Server database specified in config.ini. It reads each of the tables listed under [etl_tables] and loads them into a dictionary of Pandas DataFrames.
+Final analytics data is stored in the PostgreSQL analytics schema.
 
-2. Transform
-The transform.py module takes the raw DataFrames from the extract step. Its main function is to:
+### 🛑 Stopping the Environment
 
-Join FactInternetSales with dimension tables (DimProduct, DimProductSubcategory, DimProductCategory, DimSalesTerritory).
+```bash
+docker-compose down
+```
 
-Select a subset of relevant columns for analysis.
+Stops the container.
 
-Create a new calculated column, for example, TotalRevenue.
+Data is preserved in the postgres_data volume.
 
-This process denormalizes the data into a single, wide table (analytics_sales) that is optimized for reporting and analysis.
+## 📈 Key Outcome
 
-3. Load
-The load.py module takes the transformed DataFrames. It connects to the destination PostgreSQL database and performs the following:
+✅ Cleaned and transformed sales data in PostgreSQL.
 
-Loads the raw, extracted tables into a staging schema. This is useful for data validation and debugging.
+✅ Modular ETL code, easy to extend.
 
-Loads the final, transformed analytics_sales table into an analytics schema. This table is the final product, ready for use by BI tools or data analysts.
+✅ Fully reproducible setup using Docker.
